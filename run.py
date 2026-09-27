@@ -8,6 +8,10 @@ Usage:
   python run.py watch    # ALWAYS-ON: full cycle every --interval hours
 """
 import argparse
+import sys
+
+if hasattr(sys.stdout, "reconfigure"):  # Windows consoles choke on UTF-8 chars
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 from scout import config, memory, skills
 

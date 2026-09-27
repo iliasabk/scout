@@ -55,14 +55,23 @@ def triage(opp_id):
         "triage", title=opp.get("title") or "", url=opp.get("url") or "",
         snippet=(opp.get("raw") or "")[:1500],
     )
-    try:
-        out = tf.ask(prompt, tier="nano", temperature=0.0, max_tokens=1200)
-    except Exception as e:
-        print(f"[triage] LLM error on #{opp_id}: {e}")
-        return False
-    data = _extract_json(out)
+    out = ""
+    data = None
+    for attempt in (1, 2):  # nano sometimes emits broken JSON — one strict retry
+        try:
+            out = tf.ask(
+                prompt if attempt == 1
+                else prompt + "\n\nOutput ONLY valid JSON. No reasoning, no prose.",
+                tier="nano", temperature=0.0, max_tokens=1600,
+            )
+        except Exception as e:
+            print(f"[triage] LLM error on #{opp_id} (attempt {attempt}): {e}")
+            return False
+        data = _extract_json(out)
+        if data is not None:
+            break
     if data is None:
-        print(f"[triage] #{opp_id}: JSON parse failed. Raw (800 chars):\n{out[:800]}")
+        print(f"[triage] #{opp_id}: JSON parse failed twice. Raw (300 chars): {out[:300]}")
     data = data or {}
     if not data.get("relevant"):
         memory.update_opportunity(opp_id, status="irrelevant")

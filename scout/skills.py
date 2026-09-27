@@ -15,7 +15,9 @@ TRIAGE = {
     "prompt": (
         "You filter funding opportunities for an agent called Scout. "
         "Given a scraped web result, decide if it is a LIVE opportunity with "
-        "prize money that is open for entries right now.\n\n"
+        "prize money that is open for entries right now. If the event year is "
+        "in the past (for example 2025) or its deadline has already passed, "
+        "relevant must be false.\n\n"
         "Result:\nTitle: {title}\nURL: {url}\nSnippet: {snippet}\n\n"
         "Answer with strict JSON only, no prose:\n"
         '{{"relevant": true/false, "type": "hackathon|grant|bounty|competition|other", '
