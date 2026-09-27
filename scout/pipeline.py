@@ -83,7 +83,73 @@ def triage(opp_id):
         deadline=data.get("deadline") or "",
         kind=data.get("type") or "other",
     )
+    if data.get("listicle"):
+        # A page ABOUT many opportunities is not one opportunity — expand it.
+        extract_listicle(opp_id)
+        memory.update_opportunity(opp_id, status="expanded")
+        return False
     return True
+
+
+def extract_listicle(opp_id):
+    """Expand an index page ('Top 40 ...') into individual opportunities."""
+    opp = memory.get_opportunity(opp_id)
+    if not opp:
+        return []
+    try:
+        pages = sources.tavily_extract([opp.get("url")])
+    except Exception as e:
+        print(f"[extract] #{opp_id} extract failed: {e}")
+        return []
+    content = (pages.get(opp.get("url")) or "")[:12000]
+    if len(content) < 400:
+        return []
+    prompt = skills.render(
+        "extract_listicle",
+        title=opp.get("title") or "", url=opp.get("url") or "",
+        content=content,
+    )
+    out = tf.ask(prompt, tier="super", temperature=0.0, max_tokens=2800)
+    data = _extract_json(out)
+    if not isinstance(data, list):
+        return []
+    created, scored = [], 0
+    for item in data[:15]:
+        if not isinstance(item, dict) or not item.get("title"):
+            continue
+        url = item.get("url") or (
+            (opp.get("url") or "listicle") + "#" + item.get("title", "")[:40].replace(" ", "-")
+        )
+        new_id, was_new = memory.upsert_opportunity(
+            url=url, title=item.get("title"), source="listicle:" + str(opp_id),
+            raw=str(item)[:500],
+        )
+        if not was_new:
+            continue
+        memory.update_opportunity(
+            new_id,
+            prize=item.get("prize") or "",
+            deadline=item.get("deadline") or "",
+            kind=item.get("kind") or "other",
+        )
+        created.append(new_id)
+        # Items come from a curated super-tier extraction — score them directly,
+        # skipping past deadlines.
+        dl = (item.get("deadline") or "")[:10]
+        if dl and dl < "2026-09-27":
+            memory.update_opportunity(new_id, status="skipped")
+            continue
+        if scored < 10:
+            score(new_id)
+            scored += 1
+    if created:
+        memory.remember(
+            "episodic",
+            f"Expanded listicle '{opp.get('title')}' into {len(created)} opportunities.",
+            {"source_opportunity": opp_id},
+        )
+        print(f"[extract] #{opp_id} expanded into {len(created)} opportunities")
+    return created
 
 
 def score(opp_id):
@@ -98,7 +164,7 @@ def score(opp_id):
     prompt = skills.render(
         "score_fit",
         profile=memory.profile_text(),
-        memory=memory.memory_block(25),
+        memory=memory.memory_block(25) + "\n\n" + memory.outcome_stats(),
         opportunity=opp_json,
     )
     out = tf.ask(prompt, tier="super", temperature=0.2, max_tokens=1200)
@@ -187,6 +253,49 @@ def record_outcome(opp_id, outcome):
     memory.update_opportunity(opp_id, status="entered" if outcome == "won" else "closed")
 
 
+def _cycle_report():
+    """What the agent knows about its own last performance."""
+    os_ = memory.list_opportunities(limit=500)
+    counts = {}
+    for o in os_:
+        counts[o["status"] or "new"] = counts.get(o["status"] or "new", 0) + 1
+    shortlist = [
+        {"title": o["title"], "fit": o["fit_score"], "why": (o["why"] or "")[:120]}
+        for o in os_ if o["status"] in ("shortlist", "drafting") and o["fit_score"]
+    ][:8]
+    return {
+        "opportunities_by_status": counts,
+        "recent_shortlist": shortlist,
+        "recent_memory": memory.memory_block(10),
+    }
+
+
+def reflect():
+    """After a cycle: review performance and improve one skill (self-evolution)."""
+    skills_text = "\n\n".join(
+        f"--- {s['name']} ---\n{s['prompt']}" for s in memory.list_skills()
+    )
+    prompt = skills.render(
+        "reflect", skills=skills_text,
+        report=json.dumps(_cycle_report(), indent=2),
+    )
+    out = tf.ask(prompt, tier="super", temperature=0.3, max_tokens=2400)
+    data = _extract_json(out) or {}
+    action = data.get("action")
+    if action in ("update", "create") and data.get("skill") and data.get("prompt"):
+        memory.add_skill(
+            data["skill"], data["prompt"], "[scout] " + (data.get("reason") or "")
+        )
+        memory.remember(
+            "episodic",
+            f"Self-update: {action}d skill '{data['skill']}' — {data.get('reason', '')}",
+        )
+        print(f"[reflect] {action}d skill '{data['skill']}': {data.get('reason', '')}")
+        return data
+    print(f"[reflect] no skill change: {data.get('reason') or 'none justified'}")
+    return data
+
+
 def run_cycle(queries=None, drafts=True):
     """Full pass: scan → triage → score → brief (→ drafts for top fits)."""
     new_ids = scan(queries)
@@ -204,4 +313,8 @@ def run_cycle(queries=None, drafts=True):
             if fit >= config.DRAFT_THRESHOLD:
                 draft(opp_id)
     text = brief()
+    try:
+        reflect()
+    except Exception as e:
+        print(f"[reflect] failed (continuing): {e}")
     return {"new": len(new_ids), "triaged": len(scored), "brief": text}

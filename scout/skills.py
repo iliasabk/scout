@@ -22,7 +22,8 @@ TRIAGE = {
         "Answer with strict JSON only, no prose:\n"
         '{{"relevant": true/false, "type": "hackathon|grant|bounty|competition|other", '
         '"title": "<cleaned official title>", "prize": "<prize pool or '' if none>", '
-        '"deadline": "<ISO date if stated, else ''>"}}'
+        '"deadline": "<ISO date if stated, else ''>", '
+        '"listicle": <true if this page LISTS multiple opportunities instead of being one>}}'
     ),
 }
 
@@ -75,7 +76,44 @@ DRAFT_SUBMISSION = {
     ),
 }
 
-BUILTINS = [TRIAGE, SCORE_FIT, DAILY_BRIEF, DRAFT_SUBMISSION]
+EXTRACT_LISTICLE = {
+    "name": "extract_listicle",
+    "description": "Expand a page that lists many opportunities into individual opportunities.",
+    "prompt": (
+        "You extract funding opportunities from a web page for an agent called Scout.\n\n"
+        "PAGE TITLE: {title}\nPAGE URL: {url}\n\n"
+        "PAGE CONTENT (truncated):\n{content}\n\n"
+        "Extract EVERY distinct opportunity mentioned (hackathon, grant, bounty, "
+        "competition) as strict JSON only, no prose:\n"
+        '[{{"title": "<official name>", "url": "<link if present, else empty>", '
+        '"prize": "<prize pool or empty>", "deadline": "<ISO date if stated, else empty>", '
+        '"kind": "hackathon|grant|bounty|competition"}}]\n\n'
+        "Rules: maximum 15 items, most attractive first. Skip closed/past events, "
+        "navigation items, and anything that is not itself an opportunity."
+    ),
+}
+
+REFLECT = {
+    "name": "reflect",
+    "description": "After each cycle: review what failed and improve one skill prompt.",
+    "prompt": (
+        "You are Scout, an always-on funding agent. After a hunting cycle you "
+        "reflect on your own performance and improve ONE of your skills.\n\n"
+        "CURRENT SKILLS:\n{skills}\n\n"
+        "CYCLE REPORT:\n{report}\n\n"
+        "If a concrete, evidence-based improvement is justified, update one skill "
+        "prompt or write a new skill. Preserve every {{placeholder}} field the "
+        "skill's pipeline expects (triage needs title/url/snippet; score_fit needs "
+        "profile/memory/opportunity; daily_brief needs profile/opportunities/memory; "
+        "draft_submission needs profile/analysis/opportunity/memory).\n\n"
+        "Answer with strict JSON only, no prose:\n"
+        '{{"action": "update|create|none", "skill": "<name>", '
+        '"prompt": "<the full new prompt template, or empty>", '
+        '"reason": "<one sentence, cite the evidence>"}}'
+    ),
+}
+
+BUILTINS = [TRIAGE, SCORE_FIT, DAILY_BRIEF, DRAFT_SUBMISSION, EXTRACT_LISTICLE, REFLECT]
 
 
 def install_builtins():

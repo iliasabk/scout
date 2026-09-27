@@ -200,3 +200,26 @@ def get_skill(name):
     with db() as c:
         row = c.execute("SELECT * FROM skills WHERE name=?", (name,)).fetchone()
     return dict(row) if row else None
+
+
+# ---- outcome calibration ----------------------------------------------------
+
+def outcome_stats():
+    """Real track record from recorded outcomes — feeds the scoring prompts."""
+    with db() as c:
+        rows = c.execute(
+            "SELECT content FROM memories WHERE kind='outcome' ORDER BY id DESC LIMIT 100"
+        ).fetchall()
+    total = len(rows)
+    if not total:
+        return "No completed opportunities recorded yet."
+    won = sum(1 for r in rows if ": won" in r["content"].lower())
+    lost = sum(1 for r in rows if ": lost" in r["content"].lower())
+    skipped = sum(1 for r in rows if ": skipped" in r["content"].lower())
+    entered = won + lost
+    rate = f" ({won * 100 // entered}% win rate)" if entered else ""
+    return (
+        f"Track record from memory: {total} outcomes recorded — {won} won, "
+        f"{lost} lost, {skipped} skipped{rate}. Weigh similar past opportunities "
+        f"accordingly: skipped types are usually a bad fit; won types are a strong signal."
+    )
