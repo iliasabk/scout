@@ -3,6 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Scout — an always-on funding agent that hunts hackathons, grants and bounties on Nemotron.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='40' fill='none' stroke='%23ffb02e' stroke-width='8'/%3E%3Ccircle cx='50' cy='50' r='15' fill='%23ffb02e'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <title>Scout — always-on funding agent</title>
 <style>
 :root{
@@ -14,7 +19,8 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
-body{background:var(--bg);color:var(--text);font:15px/1.55 -apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--text);font:15px/1.55 "Space Grotesk",-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased;font-feature-settings:"tnum" 1}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:60;opacity:.032;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E")}
 .wrap{max-width:1160px;margin:0 auto;padding:30px 22px 110px}
 header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:6px}
 .mark{width:42px;height:42px;border-radius:13px;background:var(--panel);border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;font-size:21px;color:var(--accent);box-shadow:0 0 24px rgba(255,176,46,.12)}
@@ -25,7 +31,7 @@ h1{font-size:23px;letter-spacing:-.4px}
 .chip b{color:var(--text);font-family:var(--mono)}
 .record{font-size:12px;color:var(--faint);flex:1;min-width:220px}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:13px;margin-bottom:14px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px;box-shadow:inset 0 1px 0 rgba(255,255,255,.035),0 1px 3px rgba(0,0,0,.4)}
 .card h3{font-size:10.5px;text-transform:uppercase;letter-spacing:1.3px;color:var(--dim);margin-bottom:11px}
 .routing{font-family:var(--mono);font-size:12.5px}
 .routing .row{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px dashed var(--line)}
@@ -71,7 +77,7 @@ tr.opp:hover{background:rgba(255,176,46,.035)}
 .deadline{font-family:var(--mono);font-size:12px}
 .dl-far{color:var(--dim)} .dl-mid{color:var(--warn)} .dl-near{color:var(--bad);font-weight:700}
 .md{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:var(--r);padding:18px 22px;margin-top:8px;font-size:14px}
-.md h1{font-size:19px;margin:2px 0 10px} .md h2{font-size:16px;margin:16px 0 8px;color:var(--accent)} .md h3{font-size:14px;margin:12px 0 6px}
+.md h1{font-size:19px;margin:2px 0 10px;text-wrap:balance} .md h2{font-size:16px;margin:16px 0 8px;color:var(--accent);text-wrap:balance} .md h3{font-size:14px;margin:12px 0 6px;text-wrap:balance}
 .md p{margin:7px 0} .md ul,.md ol{margin:7px 0 7px 22px} .md li{margin:3px 0}
 .md code{font-family:var(--mono);font-size:12.5px;background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:1px 5px}
 .md pre{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px 13px;overflow:auto;margin:9px 0}
@@ -113,6 +119,19 @@ h2.sec::after{content:"";flex:1;height:1px;background:var(--line)}
 @keyframes sp{to{transform:rotate(360deg)}}
 .skel{color:var(--faint);animation:pulse 1.4s ease-in-out infinite}
 @keyframes pulse{50%{opacity:.35}}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+header{animation:rise .55s cubic-bezier(.2,.7,.2,1) both}
+.chips{animation:rise .55s .06s cubic-bezier(.2,.7,.2,1) both}
+.grid .card:nth-child(1){animation:rise .55s .1s cubic-bezier(.2,.7,.2,1) both}
+.grid .card:nth-child(2){animation:rise .55s .16s cubic-bezier(.2,.7,.2,1) both}
+.grid .card:nth-child(3){animation:rise .55s .22s cubic-bezier(.2,.7,.2,1) both}
+.grid ~ .card{animation:rise .55s .28s cubic-bezier(.2,.7,.2,1) both}
+section{animation:rise .55s cubic-bezier(.2,.7,.2,1) both}
+section:nth-of-type(1){animation-delay:.34s}
+section:nth-of-type(2){animation-delay:.4s}
+section:nth-of-type(3){animation-delay:.46s}
+section:nth-of-type(4){animation-delay:.52s}
+section:nth-of-type(5){animation-delay:.58s}
 @media(max-width:640px){ .kv{grid-template-columns:1fr} .why{max-width:220px} }
 </style>
 </head>
