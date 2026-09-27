@@ -34,6 +34,8 @@ def state():
             "nebius": bool(config.NEBIUS_API_KEY),
             "tavily": bool(config.TAVILY_API_KEY),
         },
+        "recent_memories": memory.recent_memories(40),
+        "outcome_stats": memory.outcome_stats(),
     }
 
 

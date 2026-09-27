@@ -117,7 +117,11 @@ BUILTINS = [TRIAGE, SCORE_FIT, DAILY_BRIEF, DRAFT_SUBMISSION, EXTRACT_LISTICLE, 
 
 
 def install_builtins():
+    """Seed built-in skills — never overwrite a version the agent wrote itself."""
     for s in BUILTINS:
+        row = memory.get_skill(s["name"])
+        if row and (row.get("description") or "").startswith("[scout]"):
+            continue
         memory.add_skill(s["name"], s["prompt"], s["description"])
 
 
