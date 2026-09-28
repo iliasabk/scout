@@ -131,6 +131,19 @@ def upsert_opportunity(url, title, source="", raw=""):
         return (row["id"] if row else None), created
 
 
+def find_by_title(title):
+    """Find an existing opportunity by normalized title (dup guard for listicles)."""
+    norm = " ".join(str(title or "").lower().split())
+    if len(norm) < 8:
+        return None
+    with db() as c:
+        rows = c.execute("SELECT id, title FROM opportunities LIMIT 2000").fetchall()
+    for r in rows:
+        if " ".join((r["title"] or "").lower().split()) == norm:
+            return r["id"]
+    return None
+
+
 def update_opportunity(opp_id, **fields):
     if not fields:
         return

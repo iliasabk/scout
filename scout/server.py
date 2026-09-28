@@ -36,7 +36,15 @@ def state():
         },
         "recent_memories": memory.recent_memories(40),
         "outcome_stats": memory.outcome_stats(),
+        "last_brief": _last_brief(),
     }
+
+
+def _last_brief():
+    for m in memory.recent_memories(60):
+        if m["kind"] == "semantic" and (m["content"] or "").startswith("Daily brief generated."):
+            return m["content"][len("Daily brief generated."):].strip()
+    return ""
 
 
 class ProfileIn(BaseModel):

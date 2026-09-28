@@ -117,6 +117,8 @@ def extract_listicle(opp_id):
     for item in data[:15]:
         if not isinstance(item, dict) or not item.get("title"):
             continue
+        if memory.find_by_title(item.get("title")):
+            continue  # same title already hunted — no duplicates
         url = item.get("url") or (
             (opp.get("url") or "listicle") + "#" + item.get("title", "")[:40].replace(" ", "-")
         )
@@ -205,7 +207,7 @@ def brief():
         memory=memory.memory_block(20),
     )
     text = tf.ask(prompt, tier="super", temperature=0.4, max_tokens=1600)
-    memory.remember("semantic", f"Daily brief generated.\n{text[:400]}")
+    memory.remember("semantic", "Daily brief generated.\n" + text)
     return text
 
 
