@@ -97,6 +97,15 @@ h2.sec{font-size:12px;text-transform:uppercase;letter-spacing:1.5px;color:var(--
 h2.sec::after{content:"";flex:1;height:1px;background:var(--line)}
 .draftcard{margin-top:12px}
 .draftcard .head{font-size:13.5px;color:var(--blue);font-weight:650;margin-bottom:8px}
+.draft{margin-top:10px}
+.draft summary{cursor:pointer;font-size:13.5px;color:var(--blue);font-weight:650;padding:12px 0;list-style:none;display:flex;align-items:center;gap:8px;user-select:none}
+.draft summary::-webkit-details-marker{display:none}
+.draft summary::before{content:"\25B8";color:var(--faint);transition:transform .2s;font-size:12px}
+.draft[open] summary::before{transform:rotate(90deg)}
+.draft summary:hover{color:var(--text)}
+.tl-item.selfupdate::before{border-color:var(--good);background:rgba(62,207,142,.25);box-shadow:0 0 10px rgba(62,207,142,.35)}
+.tl-item.selfupdate .tl-text{color:var(--text)}
+.tl-item.selfupdate .tl-text b{color:var(--good)}
 .timeline{border-left:2px solid var(--line);margin:4px 0 0 6px;padding-left:20px}
 .tl-item{position:relative;padding:0 0 18px}
 .tl-item:last-child{padding-bottom:2px}
@@ -340,7 +349,8 @@ function renderTimeline(){
   $('timeline').innerHTML=mems.length?mems.map(m=>{
     const txt=String(m.content||'');
     const short=txt.length>320?txt.slice(0,320)+'…':txt;
-    return'<div class="tl-item '+esc(m.kind)+'"><div class="tl-when">'+esc(String(m.created_at||'').slice(0,16).replace('T',' '))+' · '+esc(m.kind)+'</div><div class="tl-text">'+esc(short)+'</div></div>'
+    const selfup=/^Self-update/i.test(txt)?' selfupdate':'';
+    return'<div class="tl-item '+esc(m.kind)+selfup+'"><div class="tl-when">'+esc(String(m.created_at||'').slice(0,16).replace('T',' '))+' · '+esc(m.kind)+'</div><div class="tl-text">'+esc(short)+'</div></div>'
   }).join(''):'<div class="tl-text">Nothing yet — the agent writes everything it learns here.</div>';
 }
 function render(){
@@ -355,9 +365,10 @@ function render(){
   for(const k of ['skills','stack','goals','time_budget'])$('p_'+k).value=(STATE.profile[k]||'');
   renderOpps();
   renderTimeline();
-  $('drafts').innerHTML=STATE.submissions.map(s=>{
+  $('drafts').innerHTML=STATE.submissions.map(function(s,i){
     const o=STATE.opportunities.find(x=>x.id===s.opportunity_id);
-    return'<div class="md draftcard"><div class="head">Draft — '+(o?esc(o.title||o.url):'opportunity #'+s.opportunity_id)+'</div>'+md(s.draft)+'</div>'
+    const title=o?esc(o.title||o.url):'opportunity #'+s.opportunity_id;
+    return'<details class="md draft"'+(i===0?' open':'')+'><summary>Draft — '+title+'</summary>'+md(s.draft)+'</details>'
   }).join('')||'<div class="msg">No drafts yet — shortlisted opportunities get an ultra-tier skeleton automatically.</div>';
   $('skills').innerHTML=STATE.skills.map(s=>{
     const scout=String(s.description||'').indexOf('[scout]')===0;

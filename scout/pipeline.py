@@ -36,6 +36,8 @@ def scan(queries=None):
     results = sources.scan_all(queries)
     new_ids = []
     for r in results:
+        if memory.find_by_title(r.get("title", "")):
+            continue  # same title already hunted — no duplicates
         opp_id, created = memory.upsert_opportunity(
             url=r["url"], title=r["title"], source="tavily",
             raw=r["snippet"],
